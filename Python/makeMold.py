@@ -84,7 +84,7 @@ def create_negative_space_mold(input_file):
         mold_top = trimesh.boolean.difference([mold_top, key])
 
     # Step 5: Add a wax pour spout to the cavity in the top mold
-    pour_spout_radius = 2 #wall_thickness / 3
+    pour_spout_radius = wall_thickness / 3
     pour_spout_height = wall_thickness * 3
     pour_spout = trimesh.creation.cylinder(
         radius=pour_spout_radius,
