@@ -3,7 +3,7 @@ import os
 import argparse
 
 
-def create_negative_space_mold(input_file, wall_thickness):
+def create_negative_space_mold(input_file):
     # Load the input STL file
     original_mesh = trimesh.load_mesh(input_file)
 
@@ -12,6 +12,7 @@ def create_negative_space_mold(input_file, wall_thickness):
         raise ValueError("Input mesh must be watertight for mold creation.")
 
     # Step 1: Create the outer mold block
+    wall_thickness = 10.0  # Ensure at least 10mm wall thickness
     bounding_box = original_mesh.bounds
     min_corner = bounding_box[0] - wall_thickness
     max_corner = bounding_box[1] + wall_thickness
@@ -68,29 +69,22 @@ def create_negative_space_mold(input_file, wall_thickness):
 
     for position in key_positions:
         # Create a key cylinder
-        key_bottom = trimesh.creation.cylinder(
+        key = trimesh.creation.cylinder(
             radius=key_radius,
             height=key_height,
             sections=32
         )
-
-        key_top = trimesh.creation.cylinder(
-            radius=key_radius+0.2,
-            height=key_height,
-            sections=32
-        )
         # Position the key on the cavity face
-        key_bottom.apply_translation([position[0], position[1], position[2]])
-        key_top.apply_translation([position[0], position[1], position[2]])
+        key.apply_translation([position[0], position[1], position[2]])
 
         # Add key to the bottom mold
-        mold_bottom = trimesh.boolean.union([mold_bottom, key_bottom])
+        mold_bottom = trimesh.boolean.union([mold_bottom, key])
 
         # Subtract the key from the top mold
-        mold_top = trimesh.boolean.difference([mold_top, key_top])
+        mold_top = trimesh.boolean.difference([mold_top, key])
 
     # Step 5: Add a wax pour spout to the cavity in the top mold
-    pour_spout_radius = 5 # wall_thickness / 3
+    pour_spout_radius = wall_thickness / 3
     pour_spout_height = wall_thickness * 3
     pour_spout = trimesh.creation.cylinder(
         radius=pour_spout_radius,
@@ -120,18 +114,15 @@ def create_negative_space_mold(input_file, wall_thickness):
 
     print(f"Mold halves saved as '{output_top}' and '{output_bottom}'.")
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Create a negative space mold with interlocking alignment keys and a wax pour spout."
     )
     parser.add_argument("input_file", type=str, help="Path to the input STL file.")
-    parser.add_argument("--wall_thickness", type=float, default=10.0,
-                        help="Thickness of the mold walls (default: 10.0).")
 
     args = parser.parse_args()
 
     if not os.path.exists(args.input_file):
         print(f"Input file '{args.input_file}' does not exist.")
     else:
-        create_negative_space_mold(args.input_file, args.wall_thickness)
+        create_negative_space_mold(args.input_file)
